@@ -355,6 +355,13 @@ def deploy_javac(self):
     tsk = self.create_task('DeployTarget', src=src, tgt=tgt)
     tsk.set_run_after(self.javac_task)
 
+@TaskGen.feature('deploy_stlib')
+@TaskGen.after_method('apply_link')
+def deploy_stlib(self):
+    src = self.link_task.outputs[0]
+    tgt = src.parent.get_src().make_node(src.name)
+    tsk = self.create_task('DeployTarget', src=src, tgt=tgt)
+    tsk.set_run_after(self.link_task)
 
 # }}}
 # {{{ remove_dynlibs: option to remove all dynamic libraries at link
