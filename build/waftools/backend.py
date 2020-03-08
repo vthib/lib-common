@@ -161,7 +161,7 @@ def compile_fpic(ctx):
     for tgen in ctx.get_all_task_gen():
         features = tgen.to_list(getattr(tgen, 'features', []))
 
-        if not 'cshlib' in features:
+        if 'deploy_stlib' not in features and 'cshlib' not in features:
             continue
 
         # Shared libraries must be compiled with the -fPIC compilation flag...
