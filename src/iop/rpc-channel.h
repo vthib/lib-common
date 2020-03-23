@@ -344,6 +344,11 @@ typedef int (ic_creds_f)(ichannel_t * nonnull,
                          const ic_creds_t * nonnull creds);
 typedef void (ic_msg_cb_f)(ichannel_t * nonnull, ic_msg_t * nonnull,
                            ic_status_t, void * nullable, void * nullable);
+typedef void (ic_msg_cb2_f)(ichannel_t * nonnull, ic_msg_t * nonnull,
+                            ic_status_t,
+                            const unsigned char * nullable res, uint32_t rlen,
+                            const unsigned char * nullable exn,
+                            uint32_t elen);
 #ifdef __has_blocks
 typedef void (BLOCK_CARET ic_msg_cb_b)(ichannel_t * nonnull, ic_status_t,
                                        void * nullable, void * nullable);
@@ -376,9 +381,10 @@ struct ic_msg_t {
     pstream_t raw_res;
 
     /* user provided fields */
-    const iop_rpc_t  * nullable rpc;
     const ic__hdr__t * nullable hdr;
+    const iop_rpc_t  * nullable rpc;
     ic_msg_cb_f      * nullable cb;
+    ic_msg_cb2_f     * nullable cb2;
     byte              priv[];
 };
 ic_msg_t * nonnull ic_msg_new(int len);
@@ -458,6 +464,7 @@ void ic_hook_ctx_delete(ic_hook_ctx_t * nullable * nonnull pctx);
 typedef enum ic_cb_entry_type_t {
     IC_CB_NORMAL,
     IC_CB_NORMAL_BLK,
+    IC_CB_NORMAL_RAW,
     IC_CB_PROXY_P,
     IC_CB_PROXY_PP,
     IC_CB_DYNAMIC_PROXY,
@@ -484,7 +491,12 @@ typedef ic_dynproxy_t (ic_dynproxy_f)(ic__hdr__t * nullable hdr,
 
 typedef struct ic_cb_entry_t {
     ic_cb_entry_type_t cb_type;
-    const iop_rpc_t * nonnull rpc;
+    union {
+        const iop_rpc_t * nonnull rpc;
+        struct {
+            bool async;
+        } rpc_raw;
+    };
 
     ic_pre_hook_f  * nullable pre_hook;
     ic_post_hook_f * nullable post_hook;
@@ -495,6 +507,10 @@ typedef struct ic_cb_entry_t {
             void (* nonnull cb)(ichannel_t * nonnull, uint64_t,
                                 void * nullable, const ic__hdr__t * nullable);
         } cb;
+        struct {
+            void (* nonnull cb)(ichannel_t * nonnull, uint64_t, int32_t,
+                                 lstr_t, const ic__hdr__t * nullable);
+        } cbr;
 
 #ifdef __has_blocks
         struct {

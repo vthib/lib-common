@@ -1072,10 +1072,10 @@ ic_read_process_answer(ichannel_t *ic, int cmd, uint32_t slot,
 
     cmd = -cmd;
     if (likely(cmd == IC_MSG_OK)) {
-        st = tmp->rpc->result;
+        st = tmp->rpc ? tmp->rpc->result : NULL;
     } else
     if (cmd == IC_MSG_EXN) {
-        st = tmp->rpc->exn;
+        st = tmp->rpc ? tmp->rpc->exn : NULL;
     } else {
         assert (dlen == 0 || cmd == IC_MSG_INVALID);
         if (dlen > 0) {
@@ -1092,39 +1092,54 @@ ic_read_process_answer(ichannel_t *ic, int cmd, uint32_t slot,
         goto wipe;
     }
     if (!tmp->raw) {
-        t_scope;
-        void *value = NULL;
-        pstream_t ps = tmp->raw_res;
-        unsigned unpack_flags = ic->is_public ? IOP_UNPACK_FORBID_PRIVATE : 0;
-
-        if (unlikely(t_get_value_of_st(st, unpacked_msg, ps,
-                                       unpack_flags, &value) < 0))
-        {
-            if (tmp->trace) {
-                const char *err = iop_get_err();
-
-                if (err) {
-                    ic_msg_trace(tmp, "rpc(%04x:%04x):%*pM: %s",
-                                 (tmp->cmd >> 16) & 0x7fff, tmp->cmd & 0x7fff,
-                                 LSTR_FMT_ARG(tmp->rpc->name), err);
-                } else {
-                    ic_msg_trace(tmp, "rpc(%04x:%04x):%*pM: answer with "
-                                 "invalid encoding",
-                                 (tmp->cmd >> 16) & 0x7fff, tmp->cmd & 0x7fff,
-                                 LSTR_FMT_ARG(tmp->rpc->name));
-                }
+        if (tmp->cb2) {
+            if (cmd == IC_MSG_OK) {
+                ic_msg_trace(tmp, "OK");
+                (*tmp->cb2)(ic, tmp, cmd,
+                            tmp->raw_res.p, ps_len(&tmp->raw_res), NULL, 0);
+            } else {
+                ic_msg_trace(tmp, "%s", ic_status_to_string(cmd));
+                (*tmp->cb2)(ic, tmp, cmd, NULL, 0,
+                            tmp->raw_res.p, ps_len(&tmp->raw_res));
             }
-            t_seal();
-            (*tmp->cb)(ic, tmp, IC_MSG_INVALID, NULL, NULL);
-        } else
-        if (cmd == IC_MSG_OK) {
-            t_seal();
-            ic_msg_trace(tmp, "OK");
-            (*tmp->cb)(ic, tmp, cmd, value, NULL);
         } else {
-            t_seal();
-            ic_msg_trace(tmp, "%s", ic_status_to_string(cmd));
-            (*tmp->cb)(ic, tmp, cmd, NULL, value);
+            t_scope;
+            void *value = NULL;
+            pstream_t ps = tmp->raw_res;
+            unsigned unpack_flags;
+
+            unpack_flags = ic->is_public ? IOP_UNPACK_FORBID_PRIVATE : 0;
+            if (unlikely(t_get_value_of_st(st, unpacked_msg, ps,
+                                           unpack_flags, &value) < 0))
+            {
+                if (tmp->trace) {
+                    const char *err = iop_get_err();
+
+                    if (err) {
+                        ic_msg_trace(tmp, "rpc(%04x:%04x):%*pM: %s",
+                                     (tmp->cmd >> 16) & 0x7fff,
+                                     tmp->cmd & 0x7fff,
+                                     LSTR_FMT_ARG(tmp->rpc->name), err);
+                    } else {
+                        ic_msg_trace(tmp, "rpc(%04x:%04x):%*pM: answer with "
+                                     "invalid encoding",
+                                     (tmp->cmd >> 16) & 0x7fff,
+                                     tmp->cmd & 0x7fff,
+                                     LSTR_FMT_ARG(tmp->rpc->name));
+                    }
+                }
+                t_seal();
+                (*tmp->cb)(ic, tmp, IC_MSG_INVALID, NULL, NULL);
+            } else
+            if (cmd == IC_MSG_OK) {
+                t_seal();
+                ic_msg_trace(tmp, "OK");
+                (*tmp->cb)(ic, tmp, cmd, value, NULL);
+            } else {
+                t_seal();
+                ic_msg_trace(tmp, "%s", ic_status_to_string(cmd));
+                (*tmp->cb)(ic, tmp, cmd, NULL, value);
+            }
         }
     } else {
         (*tmp->cb)(ic, tmp, cmd, NULL, NULL);
@@ -1379,6 +1394,10 @@ t_get_details_of_query(ichannel_t *ic, int cmd, uint32_t slot,
                                         unpacked_msg, st, NULL, hdr,
                                         value);
 
+      case IC_CB_NORMAL_RAW:
+        return t_get_hdr_value_of_query(ic, cmd, slot, flags, data, dlen,
+                                        unpacked_msg, NULL, hlen, hdr, NULL);
+
       case IC_CB_PROXY_P:
       case IC_CB_PROXY_PP:
         /* need the hdr for the pre hook */
@@ -1464,16 +1483,22 @@ ic_read_process_query(ichannel_t *ic, int cmd, uint32_t slot,
     switch (e->cb_type) {
       case IC_CB_NORMAL:
       case IC_CB_NORMAL_BLK:
+      case IC_CB_NORMAL_RAW:
       case IC_CB_WS_SHARED: {
-        bool is_async = e->rpc->async;
+        bool is_async = e->rpc ? e->rpc->async : e->rpc_raw.async;
 
         t_seal();
         ic->desc = e->rpc;
         ic->cmd  = cmd;
-        assert (value);
+        if (e->cb_type == IC_CB_NORMAL_RAW) {
+            lstr_t raw_data = LSTR_DATA(data, dlen - hlen);
+            (e->u.cbr.cb)(ic, query_slot, cmd, raw_data, hdr);
+        } else
         if (e->cb_type == IC_CB_NORMAL_BLK) {
+            assert (value);
             (e->u.blk.cb)(ic, query_slot, value, hdr);
         } else {
+            assert (value);
             (*e->u.cb.cb)(ic, query_slot, value, hdr);
         }
         if (is_async) {
