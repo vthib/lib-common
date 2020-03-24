@@ -758,7 +758,9 @@ void ic_nop(ichannel_t * nonnull);
 
 el_t nullable
 ic_listento(const sockunion_t * nonnull su, int type, int proto,
-            int (*nonnull on_accept)(el_t nonnull ev, int fd));
+            void * nullable priv,
+            int (*nonnull on_accept)(el_t nonnull ev, int fd,
+                                     void * nullable priv));
 
 /** Synchronously write everything in queue.
  *

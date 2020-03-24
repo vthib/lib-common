@@ -55,14 +55,15 @@ static void exiop_addr_resolve(const lstr_t s, sockunion_t *out)
         e_fatal("unable to resolve address: %*pM", LSTR_FMT_ARG(s));
 }
 
-static el_t exiop_ic_listento(lstr_t addr, int (*on_accept)(el_t ev, int fd))
+static el_t exiop_ic_listento(lstr_t addr,
+                              int (*on_accept)(el_t ev, int fd, void *priv))
 {
     sockunion_t su;
     el_t ev;
 
     exiop_addr_resolve(addr, &su);
 
-    if (!(ev = ic_listento(&su, SOCK_STREAM, IPPROTO_TCP, on_accept)))
+    if (!(ev = ic_listento(&su, SOCK_STREAM, IPPROTO_TCP, NULL, on_accept)))
         e_fatal("cannot bind on %*pM", LSTR_FMT_ARG(addr));
 
     return ev;
@@ -174,7 +175,7 @@ static void exiop_server_on_event(ichannel_t *ic, ic_event_t evt)
     }
 }
 
-static int exiop_on_accept(el_t ev, int fd)
+static int exiop_on_accept(el_t ev, int fd, void *priv)
 {
     ichannel_t *ic;
 

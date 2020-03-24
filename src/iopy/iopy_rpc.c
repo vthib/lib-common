@@ -531,7 +531,7 @@ static void iopy_ic_server_on_event(ichannel_t *ic, ic_event_t evt)
     }
 }
 
-static int iopy_ic_server_on_accept(el_t ev, int fd)
+static int iopy_ic_server_on_accept(el_t ev, int fd, void *priv)
 {
     iopy_ic_server_t *server;
     iopy_ic_peer_t *peer;
@@ -600,7 +600,7 @@ static int iopy_ic_server_listen_internal(iopy_ic_server_t *server,
         return -1;
     }
 
-    server->el_ic = ic_listento(su, SOCK_STREAM, IPPROTO_TCP,
+    server->el_ic = ic_listento(su, SOCK_STREAM, IPPROTO_TCP, NULL,
                                 iopy_ic_server_on_accept);
     if (!server->el_ic) {
         sb_setf(err, "cannot bind channel server on %*pM",

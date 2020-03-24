@@ -3068,27 +3068,26 @@ void ic_spawn(ichannel_t *ic, int fd, ic_creds_f *creds_fn)
     }
 }
 
-static int ic_accept(el_t ev, int fd, short events, data_t priv)
-{
-    int (*on_accept)(el_t ev, int fd) = priv.ptr;
-    int sock;
-
-    while ((sock = acceptx(fd, O_NONBLOCK)) >= 0) {
-        if ((*on_accept)(ev, sock)) {
-            p_close(&sock);
-        }
-    }
-    return 0;
-}
-
-el_t ic_listento(const sockunion_t *su, int type, int proto,
-                 int (*on_accept)(el_t ev, int fd))
+el_t ic_listento(const sockunion_t *su, int type, int proto, void *priv,
+                 int (*on_accept)(el_t ev, int fd, void *priv))
 {
     int sock;
+    el_t el;
 
     sock = RETHROW_NP(listenx(-1, su, 1, type, proto, O_NONBLOCK));
-    return el_unref(el_fd_register(sock, true, POLLIN, &ic_accept,
-                                   (void *)on_accept));
+    el = el_fd_register_blk(sock, true, POLLIN,
+                            ^(el_t ev, int fd, short events) {
+        int sock2;
+
+        while ((sock2 = acceptx(fd, O_NONBLOCK)) >= 0) {
+            if ((*on_accept)(ev, sock2, priv)) {
+                p_close(&sock2);
+            }
+        }
+        return 0;
+    }, NULL);
+
+    return el_unref(el);
 }
 
 void ic_drop_ans_cb(ichannel_t *ic, ic_msg_t *msg,
