@@ -19,6 +19,16 @@
 #include <lib-common/net.h>
 #include <lib-common/container-qvector.h>
 
+pstream_t ps_initptr(const void * nullable s, const void * nullable p)
+{
+    return (pstream_t){ { s }, { p } };
+}
+
+pstream_t ps_init(const void * nullable s, size_t len)
+{
+    return ps_initptr(s, (const byte *)s + len);
+}
+
 int ps_copyv(pstream_t *ps, struct iovec *iov, size_t *iov_len, int *flags)
 {
     int orig_len = ps_len(ps);

@@ -104,15 +104,10 @@ typedef struct pstream_t {
 #define PS_CHECK(c)  RETHROW(c)
 #endif
 
-static inline pstream_t ps_initptr(const void * nullable s,
-                                   const void * nullable p)
-{
-    return (pstream_t){ { s }, { p } };
-}
-static inline pstream_t ps_init(const void * nullable s, size_t len)
-{
-    return ps_initptr(s, (const byte *)s + len);
-}
+pstream_t ps_initptr(const void * nullable s, const void * nullable p);
+
+pstream_t ps_init(const void * nullable s, size_t len);
+
 static inline pstream_t ps_initstr(const char * nonnull s)
 {
     return ps_initptr(s, s + strlen(s));
