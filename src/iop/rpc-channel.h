@@ -633,6 +633,8 @@ struct ichannel_t {
 #ifndef NDEBUG
     int pending_max;
 #endif
+
+    void * nullable priv_data;
 };
 
 void ic_drop_ans_cb(ichannel_t * nonnull, ic_msg_t * nonnull,
