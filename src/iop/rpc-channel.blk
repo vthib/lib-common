@@ -597,7 +597,6 @@ static void ic_reply_err2(ichannel_t *ic, uint64_t slot, int err,
                           const lstr_t *err_str);
 static ichannel_t *ic_get_from_slot(uint64_t slot);
 static void ic_queue(ichannel_t *ic, ic_msg_t *msg, uint32_t flags);
-static void ic_queue_for_reply(ichannel_t *ic, ic_msg_t *msg);
 static void ic_proxify(ichannel_t *pxy_ic, ic_msg_t *msg, int cmd,
                        const void *data, int dlen,
                        const ic_msg_t *unpacked_msg)
@@ -2400,7 +2399,7 @@ __ic_msg_build_from(ic_msg_t *msg, const ic_msg_t *msg_src)
            msg_src->dlen - IC_MSG_HDR_LEN);
 }
 
-static ic_msg_t *
+ic_msg_t *
 ic_msg_new_for_reply(ichannel_t **ic, uint64_t slot, int cmd)
 {
     assert (!(slot & IC_SLOT_FOREIGN_MASK));
@@ -2422,7 +2421,7 @@ ic_msg_new_for_reply(ichannel_t **ic, uint64_t slot, int cmd)
     return NULL;
 }
 
-static void ic_queue_for_reply(ichannel_t *ic, ic_msg_t *msg)
+void ic_queue_for_reply(ichannel_t *ic, ic_msg_t *msg)
 {
     if (ic_is_local(ic)) {
         const void *data = NULL;

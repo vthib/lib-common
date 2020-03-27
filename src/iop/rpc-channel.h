@@ -404,6 +404,12 @@ ic_msg_t * nonnull ic_msg_proxy_new(int fd, uint64_t slot,
                                     const ic__hdr__t * nullable hdr);
 void ic_msg_delete(ic_msg_t * nullable * nonnull);
 
+ic_msg_t * nullable
+ic_msg_new_for_reply(ichannel_t * nullable * nonnull ic, uint64_t slot,
+                     int cmd);
+
+void ic_queue_for_reply(ichannel_t * nonnull ic, ic_msg_t * nonnull msg);
+
 /** Cancel an ic message.
  *
  * Flag an ic_msg_t as "canceled". The message will not be sent or, if it is
