@@ -983,6 +983,9 @@ void ic_mark_disconnected(ichannel_t * nonnull ic);
                    "collision in RPC registering");                          \
     } while (0)
 
+void _ic_register(qm_t(ic_cbs) * nonnull h, int32_t cmd,
+                  ic_cb_entry_t * nonnull e);
+
 /** \brief same as #ic_register_pre_post_hook_ but _pre and _post args
  *    will be transform into data_t ptr.
  */

@@ -65,6 +65,13 @@ const QM(ic_cbs, ic_no_impl);
 
 /*----- messages stuff -----*/
 
+void _ic_register(qm_t(ic_cbs) * nonnull h, int32_t cmd,
+                  ic_cb_entry_t * nonnull e)
+{
+    e_assert_n(panic, qm_add(ic_cbs, h, cmd, *e),
+               "collision in RPC registering");
+}
+
 /* Tracing {{{ */
 
 #define ic_msg_trace(msg, fmt, ...)  do {                                    \
