@@ -34,6 +34,7 @@ ctx.stlib(target='libiopc', source=[
     'iopc-lang-c.blk',
     'iopc-lang-json.blk',
     'iopc-lang-typescript.c',
+    'iopc-lang-rust.c',
 ])
 
 ctx.iopc_tgen = ctx.program(target='iopc', source='iopc.c',
