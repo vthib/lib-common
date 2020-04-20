@@ -154,7 +154,8 @@ static void iopc_dump_enum(sb_t *buf, const char *indent,
 
     /* FIXME: handle is_strict */
 
-    sb_addf(buf, "\n%s#[derive(Serialize_repr, Deserialize_repr)]", indent);
+    sb_addf(buf, "\n%s#[derive(PartialEq, Eq, Clone, "
+            "Serialize_repr, Deserialize_repr)]", indent);
     sb_addf(buf, "\n%s#[repr(i32)]", indent);
     sb_addf(buf, "\n%spub enum %s {", indent, en->name);
     tab_for_each_entry(field, &en->values) {
@@ -291,7 +292,7 @@ static void iopc_dump_struct(sb_t *buf, const char *indent,
 
     iopc_struct_sort_fields(st, BY_TAG);
 
-    sb_addf(buf, "%s#[derive(Serialize, Deserialize)]\n", indent);
+    sb_addf(buf, "%s#[derive(Clone, Serialize, Deserialize)]\n", indent);
     sb_addf(buf, "%spub struct %s%s {", indent, st_name,
             is_class ? "Obj" : "");
     tab_for_each_entry(field, &st->fields) {
@@ -323,7 +324,7 @@ static void iopc_dump_union(sb_t *buf, const char *indent,
 
     iopc_struct_sort_fields(st, BY_TAG);
 
-    sb_addf(buf, "%s#[derive(Serialize, Deserialize)]\n", indent);
+    sb_addf(buf, "%s#[derive(Clone, Serialize, Deserialize)]\n", indent);
     sb_addf(buf, "%spub enum %s {", indent, st_name);
     tab_for_each_entry(field, &st->fields) {
         sb_addf(buf, "\n%s    ", indent);
