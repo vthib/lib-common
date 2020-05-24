@@ -162,6 +162,18 @@ static void iopc_dump_enum(sb_t *buf, const char *indent,
         sb_addf(buf, "\n%s    %s = %d,", indent, field->name, field->value);
     }
     sb_addf(buf, "\n%s}\n", indent);
+
+    /* FIXME: Can this test even be false? */
+    if (en->values.len > 0) {
+        /* In order to have a default initializer for structs, we need one for
+         * enums as well (as they can be used as struct fields). */
+        sb_addf(buf, "%simpl Default for %s {\n", indent, en->name);
+        sb_addf(buf, "%s    fn default() -> Self {\n", indent);
+        sb_addf(buf, "%s        %s::%s\n", indent, en->name,
+                en->values.tab[0]->name);
+        sb_addf(buf, "%s    }\n", indent);
+        sb_addf(buf, "%s}\n", indent);
+    }
 }
 
 static void iopc_dump_enums(sb_t *buf, const iopc_pkg_t *pkg)
@@ -280,6 +292,67 @@ static void iopc_dump_field(sb_t *buf, const iopc_pkg_t *pkg,
     }
 }
 
+static void iopc_dump_field_defval(sb_t *buf, const iopc_pkg_t *pkg,
+                                   const iopc_field_t *field,
+                                   unsigned flags)
+{
+    const char *prefix = "";
+
+    if (is_name_reserved(field->name)) {
+        prefix = "r#";
+    }
+
+    if (flags & ENUM_STYLE) {
+        t_scope;
+
+        sb_addf(buf, "%s%*pM(", prefix,
+                LSTR_FMT_ARG(t_field_name_to_camelcase(field->name)));
+    } else {
+        t_scope;
+
+        sb_addf(buf, "%s%*pM: ", prefix,
+                LSTR_FMT_ARG(t_camelcase_to_c(LSTR(field->name))));
+    }
+    /* FIXME: this needs testing */
+    if (field->repeat == IOP_R_DEFVAL) {
+        switch (field->kind) {
+          case IOP_T_I8: case IOP_T_I16: case IOP_T_I32: case IOP_T_I64:
+            sb_addf(buf, "%jd", *(int64_t *)&field->defval.u64);
+            break;
+          case IOP_T_U8: case IOP_T_U16: case IOP_T_U32: case IOP_T_U64:
+            sb_addf(buf, "%ju", field->defval.u64);
+            break;
+          case IOP_T_ENUM:
+            /* TODO: find the right enum string from the value in
+             * defval.u64 */
+            sb_adds(buf, "Default::default()");
+            break;
+          case IOP_T_BOOL:
+            sb_adds(buf, field->defval.u64 ? "true" : "false");
+            break;
+          case IOP_T_DOUBLE:
+            sb_addf(buf, DOUBLE_FMT, field->defval.d);
+            break;
+          case IOP_T_STRING:
+          case IOP_T_XML:
+          case IOP_T_DATA:
+            /* FIXME: this is buggy, the string must be escaped. */
+            sb_addf(buf, "\"%s\"", field->defval.ptr);
+            break;
+          default:
+            assert (false);
+            sb_adds(buf, "Default::default()");
+            break;
+        }
+    } else {
+        sb_adds(buf, "Default::default()");
+    }
+
+    if (flags & ENUM_STYLE) {
+        sb_addc(buf, ')');
+    }
+}
+
 static void iopc_dump_struct(sb_t *buf, const char *indent,
                              const iopc_pkg_t *pkg, iopc_struct_t *st,
                              const char *st_name)
@@ -298,7 +371,7 @@ static void iopc_dump_struct(sb_t *buf, const char *indent,
             is_class ? "Obj" : "");
     tab_for_each_entry(field, &st->fields) {
         while (field->tag > next_tag++) {
-            sb_addf(buf, "\n%s    _dummy%d: (),", indent, next_tag - 1);
+            sb_addf(buf, "\n%s    pub _dummy%d: (),", indent, next_tag - 1);
         }
 
         sb_addf(buf, "\n%s    pub ", indent);
@@ -306,6 +379,29 @@ static void iopc_dump_struct(sb_t *buf, const char *indent,
         sb_addc(buf, ',');
     }
     sb_addf(buf, "%s%s}\n", st->fields.len ? "\n" : "", indent);
+
+    /* Impl default trait to set default values set in IOP, but also
+     * initialize dummy fields */
+    /* TODO: if there is no field with an IOP default value, use derive
+     * default. */
+    sb_addf(buf, "%simpl Default for %s {\n", indent, st_name);
+    sb_addf(buf, "%s    fn default() -> Self {\n", indent);
+    sb_addf(buf, "%s        Self {", indent);
+
+    next_tag = 1;
+    tab_for_each_entry(field, &st->fields) {
+        while (field->tag > next_tag++) {
+            sb_addf(buf, "\n%s            _dummy%d: (),", indent,
+                    next_tag - 1);
+        }
+
+        sb_addf(buf, "\n%s            ", indent);
+        iopc_dump_field_defval(buf, pkg, field, 0);
+        sb_addc(buf, ',');
+    }
+    sb_addf(buf, "\n%s        }\n", indent);
+    sb_addf(buf, "%s    }\n", indent);
+    sb_addf(buf, "%s}\n", indent);
 
     if (iopc_is_class(st->type)) {
         sb_addf(buf, "%spub trait %s {}\n", indent, st_name);
@@ -337,6 +433,18 @@ static void iopc_dump_union(sb_t *buf, const char *indent,
         sb_adds(buf, ",");
     }
     sb_addf(buf, "\n%s}\n", indent);
+
+    /* FIXME: Can this test even be false? */
+    if (st->fields.len > 0) {
+        /* In order to have a default initializer for structs, we need one for
+         * enums as well (as they can be used as struct fields). */
+        sb_addf(buf, "%simpl Default for %s {\n", indent, st_name);
+        sb_addf(buf, "%s    fn default() -> Self {\n", indent);
+        sb_addf(buf, "%s        %s::", indent, st_name);
+        iopc_dump_field_defval(buf, pkg, st->fields.tab[0], ENUM_STYLE);
+        sb_addf(buf, "\n%s    }\n", indent);
+        sb_addf(buf, "%s}\n", indent);
+    }
 }
 
 static void iopc_dump_structs(sb_t *buf, iopc_pkg_t *pkg)
