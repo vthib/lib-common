@@ -418,6 +418,7 @@ static void iopc_dump_rpc(sb_t *buf, const iopc_pkg_t *pkg,
     sb_addf(buf, "        impl libcommon_ic::types::Rpc for %pL {\n", &name);
     sb_addf(buf, "            type Input = %pLArgs;\n", &name);
     sb_addf(buf, "            type Output = %pLRes;\n", &name);
+    sb_addf(buf, "            type Exception = %pLExn;\n", &name);
     sb_addf(buf, "            const TAG: u16 = %d;\n", rpc->tag);
     sb_addf(buf, "            const ASYNC: bool = %s;\n",
             rpc->fun_is_async ? "true" : "false");
