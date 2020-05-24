@@ -285,6 +285,7 @@ static void iopc_dump_struct(sb_t *buf, const char *indent,
                              const char *st_name)
 {
     bool is_class = iopc_is_class(st->type);
+    int next_tag = 1;
 
     if (!st_name) {
         st_name = st->name;
@@ -296,6 +297,10 @@ static void iopc_dump_struct(sb_t *buf, const char *indent,
     sb_addf(buf, "%spub struct %s%s {", indent, st_name,
             is_class ? "Obj" : "");
     tab_for_each_entry(field, &st->fields) {
+        while (field->tag > next_tag++) {
+            sb_addf(buf, "\n%s    _dummy%d: (),", indent, next_tag - 1);
+        }
+
         sb_addf(buf, "\n%s    pub ", indent);
         iopc_dump_field(buf, pkg, field, 0);
         sb_addc(buf, ',');
