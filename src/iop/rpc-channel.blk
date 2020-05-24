@@ -1089,11 +1089,19 @@ ic_read_process_answer(ichannel_t *ic, int cmd, uint32_t slot,
             iop_set_err2(&err);
             ic_msg_trace(tmp, "%s %*pM", ic_status_to_string(cmd),
                         LSTR_FMT_ARG(err));
-            (*tmp->cb)(ic, tmp, cmd, NULL, &err);
+            if (tmp->cb2) {
+                (*tmp->cb2)(ic, tmp, cmd, NULL, 0, err.data, err.len);
+            } else {
+                (*tmp->cb)(ic, tmp, cmd, NULL, &err);
+            }
         } else {
             iop_clear_err();
             ic_msg_trace(tmp, "%s", ic_status_to_string(cmd));
-            (*tmp->cb)(ic, tmp, cmd, NULL, NULL);
+            if (tmp->cb2) {
+                (*tmp->cb2)(ic, tmp, cmd, NULL, 0, NULL, 0);
+            } else {
+                (*tmp->cb)(ic, tmp, cmd, NULL, NULL);
+            }
         }
         goto wipe;
     }
