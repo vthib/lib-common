@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -285,6 +285,7 @@ static void iop_dso_wipe(iop_dso_t *dso)
     }
 }
 REFCNT_NEW(iop_dso_t, iop_dso);
+REFCNT_RELEASE(iop_dso_t, iop_dso);
 REFCNT_DELETE(iop_dso_t, iop_dso);
 
 static int iop_dso_register_(iop_dso_t *dso, sb_t *err);

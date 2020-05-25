@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -41,11 +41,12 @@ void ps_dump_backtrace(int signum, const char *prog, int fd, bool full)
     int   bt, n;
 
     if (signum >= 0) {
-        n = snprintf(buf, sizeof(buf), "---> %s[%d] %s\n\n",
-                     prog, getpid(), sys_siglist[signum]);
+        n = snprintf(buf, sizeof(buf), "---> %s[%d] %s at %jd\n\n",
+                     prog, getpid(), sys_siglist[signum], time(NULL));
     } else {
-        n = snprintf(buf, sizeof(buf), "---> %s[%d]\n\n",
-                     prog, getpid());
+        n = snprintf(buf, sizeof(buf),
+                     "---> %s[%d] expect violation at %jd\n\n",
+                     prog, getpid(), time(NULL));
     }
     if (xwrite(fd, buf, n) < 0) {
         return;

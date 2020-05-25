@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -50,11 +51,11 @@ NUM_COLUMNS = len(COLUMNS)
 
 def plot(filename):
     data = np.loadtxt(filename, delimiter=',') #pylint: disable=E1101
-    print data.shape
-    print NUM_COLUMNS
+    print(data.shape)
+    print(NUM_COLUMNS)
 
     # adding "time"
-    time = np.array(xrange(len(data[:,0]))) #pylint: disable=E1101
+    time = np.array(range(len(data[:,0]))) #pylint: disable=E1101
 
     # generate figure
     (_, ax1) = plt.subplots()

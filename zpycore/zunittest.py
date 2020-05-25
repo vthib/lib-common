@@ -1,7 +1,8 @@
+#/usr/bin/env python3
 # -*- coding: utf-8 -*-
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -89,7 +90,7 @@ def public(sym):
     __all__.append(sym.__name__)
     return sym
 
-class _LoadTests(object):
+class _LoadTests:
     """
     _LoadTests
 

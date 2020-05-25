@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -28,11 +28,6 @@
 #define WRITE_PERIOD  256
 #endif
 
-#ifndef __BIGGEST_ALIGNMENT__
-#define __BIGGEST_ALIGNMENT__  16
-#endif
-
-#define DEFAULT_ALIGNMENT  __BIGGEST_ALIGNMENT__
 #ifndef NDEBUG
 # define MIN_ALIGNMENT  sizeof(void *)
 #else

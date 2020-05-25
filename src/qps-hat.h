@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -31,7 +31,7 @@
  *
  * QHAT-Trie is a a HAT-Trie implementation built on the top of \ref qps. It
  * provides an ordered mapping between fixed-length keys (32bits) and
- * fixed-length values.
+ * fixed-length values (<= 128 bits).
  *
  * \section nullables Nullable vs Non-nullable tries
  *

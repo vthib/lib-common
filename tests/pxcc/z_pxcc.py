@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-#vim:set fileencoding=utf-8:
+#!/usr/bin/env python3
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -18,25 +17,15 @@
 #                                                                         #
 ###########################################################################
 
-import sys
+import zpycore as z
+import zchk_mod
 
-if sys.version_info[0] < 3:
-    def metaclass(cls):
-        return cls
 
-    def u(*args):
-        return unicode(*args)
+@z.ZGroup
+class PxccTests(z.TestCase):
+    def test_cubic(self):
+        self.assertEqual(zchk_mod.cubic(4), 4**3)
 
-    def b(*args):
-        return bytes(*args)
-else:
-    def metaclass(cls):
-        dct = dict(cls.__dict__)
-        dct.pop('__dict__', None)
-        return cls.__metaclass__(cls.__name__, cls.__bases__, dct)
 
-    def u(obj, *args):
-        return str(obj)
-
-    def b(obj, *args):
-        return bytes(obj, encoding='utf-8', *args)
+if __name__ == "__main__":
+    z.main()

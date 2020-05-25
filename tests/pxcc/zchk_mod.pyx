@@ -1,6 +1,6 @@
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -15,9 +15,9 @@
 # limitations under the License.                                          #
 #                                                                         #
 ###########################################################################
-#cython: language_level=2
+#cython: language_level=3
 
-cdef extern from "cython_export_fix.h":
+cdef extern from "../pxcc/cython_export_fix.h":
     pass
 
 cimport zchk_cmod

@@ -1,6 +1,6 @@
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -28,5 +28,11 @@ with ctx.UseGroup(ctx, 'code_compiling'):
                 source='dso-compatibility-check.blk',
                 use='libcommon')
 
+    ctx.program(target='dso-find-free-class-id',
+                source='dso-find-free-class-id.c',
+                use='libcommon')
+
     ctx.program(target='dso2openapi', source='dso2openapi.c',
                 use='libcommon')
+
+    ctx.program(target='yamlfmt', source='yamlfmt.c', use='libcommon')

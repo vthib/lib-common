@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -37,6 +37,14 @@ class BasicClass {
     string b;
 };
 
+class BasicClassParent {
+    string b;
+};
+
+class BasicClassChild : 1 : BasicClassParent {
+    bool a;
+};
+
 abstract class BasicAbstractClass {
     bool a;
     string b;
@@ -47,6 +55,14 @@ struct StructWithRepeatedField {
     int a;
     string[] b;
     int c;
+};
+
+struct EmptyStruct {
+    int? a;
+};
+
+class EmptyClass {
+    int? a;
 };
 
 /* }}} */
@@ -239,6 +255,10 @@ struct StructContainer1 {
 
 struct StructContainer2 {
     NewRequiredField s;
+};
+
+struct StructContainer3 {
+    NewRequiredVoidField s;
 };
 
 struct InfiniteRecur1 {

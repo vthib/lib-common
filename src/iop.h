@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -271,14 +271,15 @@ int iop_field_find_by_name(const iop_struct_t * nonnull st, const lstr_t name,
  *                 allocated.
  * \param[in]  value  the pointer to an iop structure of the type \p fdesc
  *                    belongs to.
- * \param[in]  desc   IOP structure description.
+ * \param[in]  desc   IOP structure description (optional: only used for
+ *                    setting struct desc in \p iop_err_g).
  * \param[in]  fdesc  the descriptor of the field to fill.
  *
  * \return  0 if the field was filled, -1 otherwise.
  */
 __must_check__
 int iop_skip_absent_field_desc(mem_pool_t * nonnull mp, void * nonnull value,
-                               const iop_struct_t * nonnull sdesc,
+                               const iop_struct_t * nullable sdesc,
                                const iop_field_t * nonnull fdesc);
 
 int iop_ranges_search(int const * nonnull ranges, int ranges_len, int tag);
@@ -2060,6 +2061,15 @@ struct iop_enum_value {
         .v = ({ pfx##__t _v = (_val); _v; })                                 \
     }
 
+/** Same as \ref IOP_ENUM_FMT_ARG_FLAGS but with explicit description pointer.
+ */
+#define IOP_ENUM_DESC_FMT_ARG_FLAGS(_desc, _val, _flags)                     \
+    (_flags),                                                                \
+    &(struct iop_enum_value){                                                \
+        .desc = (_desc),                                                     \
+        .v = (_val),                                                         \
+    }
+
 /** Provide the appropriate arguments to print the litteral form of an enum
  *  with the %*pE modifier.
  *
@@ -2189,13 +2199,13 @@ static inline lstr_t t_iop_bpack_struct(const iop_struct_t * nonnull st,
 enum iop_unpack_flags {
     /** Allow the unpacker to skip unknown fields.
      *
-     * This flag applies to the json and xml packers.
+     * This flag applies to the json, yaml and xml packers.
      */
     IOP_UNPACK_IGNORE_UNKNOWN = (1U << 0),
 
     /** Make the unpacker reject private fields.
      *
-     * This flag applies to the binary, json and xml packers.
+     * This flag applies to the binary, json, yaml and xml packers.
      */
     IOP_UNPACK_FORBID_PRIVATE = (1U << 1),
 

@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -28,7 +28,6 @@ The script will check PHP syntax in all subdirectories.
 """
 
 
-from __future__ import print_function
 from subprocess import check_output, STDOUT, CalledProcessError
 import os
 import sys

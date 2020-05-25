@@ -1,6 +1,6 @@
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -16,10 +16,7 @@
 #                                                                         #
 ###########################################################################
 
-import z_compatibility
 
-@z_compatibility.metaclass
-class test_ClassB(object):
-    __metaclass__ = _iopy_register.metaclass
+class test_ClassB(metaclass=_iopy_register.metaclass):
     def user_method(self):
         return self.field2 == 2 and super(test_ClassB, self).user_method()

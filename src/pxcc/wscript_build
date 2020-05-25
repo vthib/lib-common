@@ -1,6 +1,6 @@
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -26,15 +26,3 @@ with ctx.UseGroup(ctx, 'pxcc'):
         'clang',
         'libcommon-minimal',
     ])
-
-ctx.shlib(target='zchk_mod', features='c cshlib', source=[
-    'zchk_cmod.pxc',
-    'zchk_mod.pyx',
-    'zchk_cmod.c',
-], use=[
-    'python2',
-], cflags=[
-    '-Wno-unused-parameter',
-    '-Wno-shadow',
-    '-Wno-redundant-decls',
-])

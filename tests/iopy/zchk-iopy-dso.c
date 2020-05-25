@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -27,9 +27,7 @@
 
 /* LCOV_EXCL_START */
 
-#if PY_MAJOR_VERSION >= 3
-
-# define IOPY_DSO_NAME  "iopy/python3/iopy.so"
+# define IOPY_DSO_NAME  "iopy.so"
 # define T_PYSTRING_TO_CSTR(_obj)                                            \
     ({                                                                       \
         PyObject *_utf8 = PyUnicode_AsUTF8String(_obj);                      \
@@ -38,11 +36,6 @@
         Py_DECREF(_utf8);                                                    \
         _res;                                                                \
     })
-
-#else
-# define IOPY_DSO_NAME  "iopy/python2/iopy.so"
-# define T_PYSTRING_TO_CSTR(_obj)  t_strdup(PyBytes_AsString(_obj))
-#endif
 
 static struct {
     void *iopy_dso;
@@ -267,6 +260,6 @@ Z_GROUP_EXPORT(iopy_dso) {
 int main(int argc, char **argv)
 {
     z_setup(argc, argv);
-    z_register_exports("python/zchk-iopy-dso.c");
+    z_register_exports(PLATFORM_PATH LIBCOMMON_PATH "tests/iopy/");
     return z_run();
 }

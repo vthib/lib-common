@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -105,31 +105,74 @@ static bool warn(qv_t(iopc_attr) *nullable attrs, const char *category)
     return true;
 }
 
-int iopc_check_name(lstr_t name, qv_t(iopc_attr) *nullable attrs,
-                    sb_t *nonnull err)
+static int iopc_check_name(lstr_t name, qv_t(iopc_attr) *nullable attrs,
+                           sb_t *nullable err)
 {
     if (!name.len) {
-        sb_sets(err, "empty name");
+        if (err) {
+            sb_sets(err, "empty name");
+        }
         return -1;
     }
 
     if (memchr(name.s, '_', name.len)) {
-        sb_setf(err, "%pL contains a _", &name);
+        if (err) {
+            sb_setf(err, "%pL contains a _", &name);
+        }
         return -1;
     }
     for (int i = 0; i < countof(reserved_keywords); i++) {
         if (lstr_equal(name, LSTR(reserved_keywords[i]))) {
-            sb_setf(err, "%pL is a reserved keyword", &name);
+            if (err) {
+                sb_setf(err, "%pL is a reserved keyword", &name);
+            }
             return -1;
         }
     }
     if (warn(attrs, "keyword")) {
         for (int i = 0; i < countof(avoid_keywords); i++) {
             if (lstr_equal(name, LSTR(avoid_keywords[i]))) {
-                sb_setf(err, "%pL is a keyword in some languages", &name);
+                if (err) {
+                    sb_setf(err, "%pL is a keyword in some languages", &name);
+                }
                 return -1;
             }
         }
+    }
+
+    return 0;
+}
+
+int iopc_check_type_name(lstr_t name, sb_t *err)
+{
+    RETHROW(iopc_check_name(name, NULL, err));
+
+    /* XXX Checked by iopc_check_name(). */
+    assert (name.len);
+
+    if (!isupper(name.s[0])) {
+        if (err) {
+            sb_setf(err, "`%pL': first character should be uppercase",
+                    &name);
+        }
+        return -1;
+    }
+
+    return 0;
+}
+
+int iopc_check_field_name(lstr_t name, sb_t *err)
+{
+    RETHROW(iopc_check_name(name, NULL, err));
+
+    /* XXX Checked by iopc_check_name(). */
+    assert (name.len);
+
+    if (!islower(name.s[0])) {
+        if (err) {
+            sb_sets(err, "first field name character should be lowercase");
+        }
+        return -1;
     }
 
     return 0;
@@ -687,7 +730,7 @@ static int __tk(iopc_parser_t *pp, int i, iopc_token_t **out_tk)
         RETHROW(iopc_next_token(pp->ld, false, &tk));
         if (!tk) {
             assert (tks->len && tks->tab[tks->len - 1]->token == ITOK_EOF);
-            tk = iopc_token_dup(tks->tab[tks->len - 1]);
+            tk = iopc_token_retain(tks->tab[tks->len - 1]);
         }
         qv_append(tks, tk);
     }

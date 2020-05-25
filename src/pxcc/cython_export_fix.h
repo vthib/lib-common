@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -29,15 +29,15 @@
 #  endif
 #endif
 
+#if PY_MAJOR_VERSION < 3
+#  error "invalid python version, python >= 3 is required"
+#endif
+
 #ifndef PyMODINIT_FUNC
 #  error "PyMODINIT_FUNC should be defined"
 #endif
 
 #undef PyMODINIT_FUNC
-#if PY_MAJOR_VERSION < 3
-#  define PyMODINIT_FUNC  EXPORT void
-#else
-#  define PyMODINIT_FUNC  EXPORT PyObject *
-#endif
+#define PyMODINIT_FUNC  EXPORT PyObject *
 
 #endif /* IS_CYTHON_EXPORT_FIX_H */

@@ -1,6 +1,6 @@
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -102,7 +102,7 @@ to tests (and only them).
 
 def filter_out_zchk(ctx):
     for g in ctx.groups:
-        for i in xrange(len(g) - 1, -1, -1):
+        for i in range(len(g) - 1, -1, -1):
             tgen = g[i]
             features = tgen.to_list(getattr(tgen, 'features', []))
             if  tgen.name.startswith('zchk') and 'c' in features:
@@ -338,23 +338,6 @@ def deploy_shlib(self):
     self.link_task.outputs = [tgt]
 
 
-@TaskGen.feature('jar')
-@TaskGen.after_method('jar_files')
-def deploy_jar(self):
-    # Build Java jar files in the corresponding source directory
-    assert (len(self.jar_task.outputs) == 1)
-    node = self.jar_task.outputs[0]
-    self.jar_task.outputs = [node.get_src()]
-
-
-@TaskGen.feature('deploy_javac')
-@TaskGen.after_method('apply_java')
-def deploy_javac(self):
-    src = self.outdir.make_node(self.destfile)
-    tgt = self.outdir.get_src().make_node(self.destfile)
-    tsk = self.create_task('DeployTarget', src=src, tgt=tgt)
-    tsk.set_run_after(self.javac_task)
-
 @TaskGen.feature('deploy_stlib')
 @TaskGen.after_method('apply_link')
 def deploy_stlib(self):
@@ -382,7 +365,7 @@ def get_linter_flags(ctx, flags_key):
         if key == 'INCLUDES' or key.startswith('INCLUDES_'):
             include_flags += ['-I' + value for value in ctx.env[key]]
 
-    return ctx.env[flags_key] + ctx.env.CFLAGS_python2 + include_flags
+    return ctx.env[flags_key] + ctx.env.CFLAGS_python3 + include_flags
 
 
 def gen_local_vimrc(ctx):
@@ -563,7 +546,7 @@ def get_old_gen_files(ctx):
                     gen_files.append(parent_node.make_node(name))
         # Do not recurse in hidden directories (in particular the .build one),
         # this is useless
-        for i in xrange(len(dirnames) - 1, -1, -1):
+        for i in range(len(dirnames) - 1, -1, -1):
             if dirnames[i].startswith('.'):
                 del dirnames[i]
 
@@ -572,7 +555,7 @@ def get_old_gen_files(ctx):
     git_files = set(get_git_files_recur(ctx))
 
     # Filter-out from gen_files the files that are committed
-    gen_files = set([node for node in gen_files if node not in git_files])
+    gen_files = {node for node in gen_files if node not in git_files}
 
     # Filter-out the files that are produced by the build system.
     # This requires to post all task generators.
@@ -587,7 +570,7 @@ def get_old_gen_files(ctx):
 
     # The files that are still in gen_files are old ones that should not be on
     # disk anymore.
-    return sorted(gen_files)
+    return sorted(gen_files, key=lambda x: x.abspath())
 
 
 def old_gen_files_detect(ctx):
@@ -769,7 +752,7 @@ def init_c_ctx(self):
 @TaskGen.feature('c')
 @TaskGen.after_method('propagate_uselib_vars')
 def update_blk2c_envs(self):
-    if not len(self.blk2c_tasks):
+    if not self.blk2c_tasks:
         return
 
     # Compute clang extra cflags from gcc flags
@@ -827,7 +810,7 @@ def init_cxx_ctx(self):
 @TaskGen.feature('cxx')
 @TaskGen.after_method('propagate_uselib_vars')
 def update_blk2cc_envs(self):
-    if len(self.blkk2cc_tasks):
+    if self.blkk2cc_tasks:
         # Compute clang extra cflags from g++ flags
         extra_flags = compute_clang_extra_cflags(
             self, self.env.CLANGXX_REWRITE_FLAGS, 'CXXFLAGS')
@@ -909,7 +892,14 @@ def process_lex(self, node):
 # {{{ FC
 
 
-class Fc2c(Task):
+class FirstInputStrTask(Task):
+
+    def __str__(self):
+        node = self.inputs[0]
+        return node.path_from(node.ctx.launch_node())
+
+
+class Fc2c(FirstInputStrTask):
     run_str = ['rm -f ${TGT}', '${FARCHC} -c -o ${TGT} ${SRC[0].abspath()}']
     color   = 'BLUE'
     before  = ['Blk2c', 'Blkk2cc', 'ClangCheck']
@@ -938,11 +928,7 @@ class Fc2c(Task):
                 else:
                     variable_name_found = True
 
-        # fc files must be rebuilt if farchc changes
-        deps.append(node.ctx.farchc_tgen.link_task.outputs[0])
-
         return (deps, None)
-
 
 
 @extension('.fc')
@@ -960,7 +946,8 @@ def process_fc(self, node):
     h_node = node.change_ext_src('.fc.c')
     if not h_node in self.env.GEN_FILES:
         self.env.GEN_FILES.add(h_node)
-        farch_task = self.create_task('Fc2c', [node], h_node)
+        inputs = [node, ctx.farchc_tgen.link_task.outputs[0]]
+        farch_task = self.create_task('Fc2c', inputs, h_node)
         farch_task.set_run_after(ctx.farchc_task)
 
 
@@ -996,7 +983,7 @@ def process_tokens(self, node):
 # {{{ IOP
 
 # IOPC options for a given sources path
-class IopcOptions(object):
+class IopcOptions:
 
     def __init__(self, ctx, path=None, class_range=None, includes=None,
                  json_path=None, ts_path=None):
@@ -1089,7 +1076,7 @@ class IopcOptions(object):
             includes = set()
             seen_opts = set()
             self.get_includes_recursive(includes, seen_opts)
-            if len(includes):
+            if includes:
                 nodes = [node.abspath() for node in includes]
                 nodes.sort()
                 self.computed_includes = '-I{0}'.format(':'.join(nodes))
@@ -1098,9 +1085,10 @@ class IopcOptions(object):
         return self.computed_includes
 
 
-class Iop2c(Task):
+class Iop2c(FirstInputStrTask):
     color   = 'BLUE'
     ext_out = ['.h', '.c']
+    before  = ['Blk2c', 'Blkk2cc', 'ClangCheck']
 
     @classmethod
     def keyword(cls):
@@ -1121,7 +1109,7 @@ class Iop2c(Task):
         # exec_command does not seem to allow dropping the output :-(...
         cmd = ('{iopc} {includes} --depends {depfile} -o {outdir} {source} '
                '> /dev/null 2>&1')
-        cmd = cmd.format(iopc=self.env.IOPC,
+        cmd = cmd.format(iopc=self.inputs[1].abspath(),
                          includes=self.env.IOP_INCLUDES,
                          depfile=depfile.abspath(),
                          outdir=self.outputs[0].parent.abspath(),
@@ -1134,16 +1122,13 @@ class Iop2c(Task):
         deps = depfile.read().splitlines()
         deps = [node.ctx.root.make_node(dep) for dep in deps]
 
-        # IOP files must be rebuilt if iopc changes
-        deps.append(node.ctx.iopc_tgen.link_task.outputs[0])
-
         return (deps, None)
 
     def run(self):
         cmd = ('{iopc} --Wextra --language {languages} '
                '--c-resolve-includes --typescript-enable-backbone '
                '{includes} {class_range} {json_output} {ts_output} {source}')
-        cmd = cmd.format(iopc=self.env.IOPC,
+        cmd = cmd.format(iopc=self.inputs[1].abspath(),
                          languages=self.env.IOP_LANGUAGES,
                          includes=self.env.IOP_INCLUDES,
                          class_range=self.env.IOP_CLASS_RANGE,
@@ -1178,7 +1163,6 @@ def process_iop(self, node):
         ctx.iopc_tgen.post()
     if not hasattr(ctx, 'iopc_task'):
         ctx.iopc_task = ctx.iopc_tgen.link_task
-        ctx.env.IOPC = ctx.iopc_tgen.link_task.outputs[0].abspath()
 
     # Handle file
     c_node = node.change_ext_src('.iop.c')
@@ -1205,8 +1189,10 @@ def process_iop(self, node):
             ts_path = package_path + '.iop.ts'
             outputs.append(opts.ts_node.make_node(ts_path))
 
-        # Create iopc task
-        task = self.create_task('Iop2c', node, outputs)
+        # Create iopc task (add iopc itself in the inputs so that IOP files
+        # are rebuilt if iopc changes)
+        inputs = [node, ctx.iopc_tgen.link_task.outputs[0]]
+        task = self.create_task('Iop2c', inputs, outputs)
         task.set_run_after(ctx.iopc_task)
 
         # Set options in environment
@@ -1234,24 +1220,16 @@ def process_ld(self, node):
 # {{{ PXC
 
 
-class Pxc2Pxd(Task):
-    run_str = '${PXCC} ${CPPPATH_ST:INCPATHS} ${SRC} -o ${TGT}'
+class Pxc2Pxd(FirstInputStrTask):
+    run_str = '${PXCC} ${CPPPATH_ST:INCPATHS} ${SRC[0].abspath()} -o ${TGT}'
     color   = 'BLUE'
     before  = 'cython'
     after   = 'Iop2c'
+    scan    = c_preproc.scan # pxc files are C-like files
 
     @classmethod
     def keyword(cls):
         return 'Pxcc'
-
-    def scan(self):
-        # pxc files are C-like files: call standard C preprocessor
-        (deps, raw) = c_preproc.scan(self)
-
-        # pxc files must be rebuilt when pxcc changes
-        deps.append(self.inputs[0].ctx.pxcc_tgen.link_task.outputs[0])
-
-        return (deps, raw)
 
 
 @extension('.pxc')
@@ -1270,7 +1248,8 @@ def process_pxcc(self, node):
 
     if pxd_node not in self.env.GEN_FILES:
         self.env.GEN_FILES.add(pxd_node)
-        pxc_task = self.create_task('Pxc2Pxd', [node], [pxd_node],
+        inputs = [node, ctx.pxcc_tgen.link_task.outputs[0]]
+        pxc_task = self.create_task('Pxc2Pxd', inputs, [pxd_node],
                                     cwd=self.env.PROJECT_ROOT)
         pxc_task.set_run_after(ctx.pxcc_task)
 
@@ -1293,7 +1272,7 @@ class ClangCheck(Task):
 @TaskGen.feature('c')
 @TaskGen.after_method('propagate_uselib_vars')
 def update_clang_check_envs(self):
-    if len(self.clang_check_tasks):
+    if self.clang_check_tasks:
         # Compute clang extra cflags from gcc flags
         extra_flags = compute_clang_extra_cflags(self, self.env.CLANG_FLAGS,
                                                  'CFLAGS')
@@ -1414,6 +1393,7 @@ def profile_default(ctx,
     if ctx.env.COMPILER_CC == 'clang':
         # C compilation directly done using clang
         ctx.env.CFLAGS += ['-x', 'c']
+        ctx.env.CLANG_FLAGS = ctx.env.CFLAGS
     else:
         # Probably compiling with gcc; we'll need the .blk -> .c rewriting
         # pass with our modified clang
@@ -1424,6 +1404,7 @@ def profile_default(ctx,
     if ctx.env.COMPILER_CXX == 'clang++':
         # C++ compilation directly done using clang
         ctx.env.CXXFLAGS += ['-x', 'c++']
+        ctx.env.CLANGXX_FLAGS = ctx.env.CXXFLAGS
     else:
         # Probably compiling with g++; we'll need the .blkk -> .cc rewriting
         # pass with our modified clang
@@ -1485,6 +1466,8 @@ def profile_default(ctx,
     # Generate fake versions?
     if allow_fake_versions and ctx.get_env_bool('FAKE_VERSIONS'):
         ctx.env.FAKE_VERSIONS = True
+        ctx.env.CFLAGS += ['-DFAKE_VERSIONS']
+        ctx.env.CXXFLAGS += ['-DFAKE_VERSIONS']
         log = 'yes'
     else:
         ctx.env.FAKE_VERSIONS = False

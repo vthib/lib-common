@@ -1,6 +1,6 @@
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -21,8 +21,9 @@ ctx.set_group('farchc')
 
 # {{{ libcommon-minimal library
 
-ctx(rule='${VERSION_SH} rcsid libcommon > ${TGT}',
-    target='core-version.c', cwd='.', always=True)
+with ctx.UseGroup(ctx, 'gen_version'):
+    ctx(rule='${VERSION_SH} rcsid libcommon > ${TGT}',
+        target='core-version.c', cwd='.', always=True)
 
 # This minimal version of the lib-common contains only what's needed to
 # build farchc and iopc. As a consequence, it cannot contain .fc or .iop
@@ -129,6 +130,7 @@ ctx.IopcOptions(ctx, class_range='1-499',
                 ts_path='iop-core')
 ctx.stlib(target='libcommon-iop', features='c cstlib deploy_stlib', source=[
     'core/core.iop',
+    'core/yaml.iop',
     'iop/ic.iop',
 ])
 
@@ -165,11 +167,15 @@ ctx.stlib(target='libcommon', features='c cstlib deploy_stlib', use=[
 
     'crypto/ssl.blk',
 
+    'net/addr.c',
     'net/http.c',
     'net/http-hdr.perf',
     'net/http-srv-static.c',
     'net/http-def.c',
     'net/httptokens.c',
+    'net/sctp.c',
+    'net/socket.c',
+    'net/rate.blk',
 
     'iop/json.blk',
     'iop/openapi.blk',
@@ -182,10 +188,9 @@ ctx.stlib(target='libcommon', features='c cstlib deploy_stlib', use=[
     'iop/xml-unpack.c',
     'iop/xml-wsdl.blk',
 
-    'net/addr.c',
-    'net/sctp.c',
-    'net/socket.c',
-    'net/rate.blk',
+    'prometheus-client/core.c',
+    'prometheus-client/metrics.c',
+    'prometheus-client/http.c',
 ])
 
 # }}}

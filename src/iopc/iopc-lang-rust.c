@@ -106,7 +106,7 @@ static void iopc_dump_imports(sb_t *buf, iopc_pkg_t *pkg)
     qv_inita(&t_weak_deps, 1024);
     qv_inita(&i_deps, 1024);
 
-    iopc_get_depends(pkg, &t_deps, &t_weak_deps, &i_deps, false, false);
+    iopc_get_depends(pkg, &t_deps, &t_weak_deps, &i_deps, 0);
 
     tab_for_each_entry(dep, &t_deps) {
         iopc_dump_import(buf, dep, &imported);
@@ -143,6 +143,7 @@ static void iopc_dump_package_member(sb_t *buf, const iopc_pkg_t *pkg,
 static void iopc_dump_enum(sb_t *buf, const char *indent,
                            const iopc_pkg_t *pkg, const iopc_enum_t *en)
 {
+#if 0
     bool is_strict = false;
 
     tab_for_each_entry(attr, &en->attrs) {
@@ -153,6 +154,7 @@ static void iopc_dump_enum(sb_t *buf, const char *indent,
     }
 
     /* FIXME: handle is_strict */
+#endif
 
     sb_addf(buf, "\n%s#[derive(PartialEq, Eq, Clone, "
             "Serialize_repr, Deserialize_repr)]", indent);
@@ -337,7 +339,7 @@ static void iopc_dump_field_defval(sb_t *buf, const iopc_pkg_t *pkg,
           case IOP_T_XML:
           case IOP_T_DATA:
             /* FIXME: this is buggy, the string must be escaped. */
-            sb_addf(buf, "\"%s\"", field->defval.ptr);
+            sb_addf(buf, "\"%s\"", (const char *)field->defval.ptr);
             break;
           default:
             assert (false);

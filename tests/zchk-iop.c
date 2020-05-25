@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -6709,7 +6709,7 @@ Z_GROUP_EXPORT(iop)
         SB_1k(sb);
         tstiop__my_struct_b__t b;
         tstiop__my_class1__t c;
-        tstiop__my_class1__t *c_ptr;
+        tstiop__my_class1__t *c_ptr = NULL;
 
         iop_init(tstiop__my_struct_b, &b);
         Z_ASSERT_N(iop_sb_jpack(&sb, &tstiop__my_struct_b__s, &b, 0));
@@ -7249,7 +7249,9 @@ Z_GROUP_EXPORT(iop)
         tstiop_backward_compat__basic_union__t  basic_union;
         tstiop_backward_compat__basic_struct__t basic_struct;
         tstiop_backward_compat__basic_class__t  basic_class;
+        tstiop_backward_compat__struct_container1__t struct_container1;
         tstiop_backward_compat__parent_class_a__t *parent_class;
+        tstiop_backward_compat__empty_struct__t empty_struct;
 
         basic_union = IOP_UNION(tstiop_backward_compat__basic_union, a, 12);
 
@@ -7257,9 +7259,15 @@ Z_GROUP_EXPORT(iop)
         basic_struct.a = 12;
         basic_struct.b = LSTR("string");
 
+        iop_init(tstiop_backward_compat__struct_container1,
+                 &struct_container1);
+        struct_container1.s = basic_struct;
+
         iop_init(tstiop_backward_compat__basic_class, &basic_class);
         basic_class.a = 12;
         basic_class.b = LSTR("string");
+
+        iop_init(tstiop_backward_compat__empty_struct, &empty_struct);
 
 #define T_OK(_type1, _obj1, _type2, _flags)  \
         do {                                                                 \
@@ -7300,17 +7308,37 @@ Z_GROUP_EXPORT(iop)
 #define INDENT_LVL3  "\n  |   |   | "
 #define INDENT_LVL4  "\n  |   |   |   | "
 
+        /* Struct to root when no fields are set is OK */
+        T_OK_ALL(empty_struct, &empty_struct, empty_class);
+
         /* Basic struct to class transitions. */
         T_KO_ALL(basic_struct, &basic_struct, basic_union,
                  "was a struct and is now a union");
         T_KO_ALL(basic_union, &basic_union, basic_struct,
                  "was a union and is now a struct");
-        T_KO_ALL(basic_struct, &basic_struct, basic_abstract_class,
-                 "was a struct and is now a class");
 
-        T_KO(basic_struct, &basic_struct, basic_class, IOP_COMPAT_BIN,
-             "was a struct and is now a class");
-        T_OK(basic_struct, &basic_struct, basic_class, IOP_COMPAT_JSON);
+        /* struct to abstract class is KO */
+        T_KO_ALL(basic_struct, &basic_struct, basic_abstract_class,
+                 "was a struct and is now an abstract class");
+
+        /* Struct to root class is OK */
+        T_OK_ALL(basic_struct, &basic_struct, basic_class);
+
+        /* Struct to child class is OK for JSON only */
+        T_KO(basic_struct, &basic_struct, basic_class_child, IOP_COMPAT_BIN,
+             "was a struct and is now a child class");
+
+        /* TODO: add checks for the JSON case
+         *
+         * T_OK(basic_struct, &basic_struct, basic_class_child,
+         *      IOP_COMPAT_JSON);
+         */
+
+        /* Struct to root class with missing fields is KO */
+        T_KO(basic_struct, &basic_struct, basic_class_parent, IOP_COMPAT_BIN,
+             "field `a` -> `b`:\n  | incompatible types");
+        T_KO(basic_struct, &basic_struct, basic_class_parent, IOP_COMPAT_JSON,
+             "field `a` does not exist anymore");
 
         T_KO(basic_class, &basic_class, basic_abstract_class, IOP_COMPAT_BIN,
              "is an abstract class but was not abstract");
@@ -7343,6 +7371,7 @@ Z_GROUP_EXPORT(iop)
         T_OK_ALL(basic_struct, &basic_struct, new_repeated_field);
         T_OK_ALL(basic_struct, &basic_struct, new_defval_field);
         T_OK_ALL(basic_struct, &basic_struct, new_required_void_field);
+        T_OK_ALL(struct_container1, &struct_container1, struct_container3);
 
         /* Renamed field. */
         T_OK(basic_struct, &basic_struct, renamed_field, IOP_COMPAT_BIN);
@@ -7560,17 +7589,9 @@ Z_GROUP_EXPORT(iop)
         }
 
         /* Field of type struct changed for an incompatible struct. */
-        {
-            tstiop_backward_compat__struct_container1__t struct_container1;
-
-            iop_init(tstiop_backward_compat__struct_container1,
-                     &struct_container1);
-            struct_container1.s = basic_struct;
-
-            T_KO_ALL(struct_container1, &struct_container1, struct_container2,
-                     "field `s`:"
-                     INDENT_LVL1 "new field `c` must not be required");
-        }
+        T_KO_ALL(struct_container1, &struct_container1, struct_container2,
+                 "field `s`:"
+                 INDENT_LVL1 "new field `c` must not be required");
 
         /* Infinite recursion in structure inclusion. */
         {
@@ -7686,8 +7707,6 @@ Z_GROUP_EXPORT(iop)
 
         /* Ignore backward incompatibilities */
         {
-            tstiop_backward_compat__struct_container1__t struct_container1;
-
             /* Json backward incompatibilities ignored */
             T_OK(basic_struct, NULL,
                  new_required_field_json_ignored,
@@ -7719,11 +7738,6 @@ Z_GROUP_EXPORT(iop)
 
             /* Nested ignored struct: must throw errors unless the root
              * struct is flagged as ignored. */
-
-            iop_init(tstiop_backward_compat__struct_container1,
-                     &struct_container1);
-            struct_container1.s = basic_struct;
-
             T_OK(struct_container1, NULL,
                  root_struct_json_ignored, IOP_COMPAT_JSON);
 
@@ -8018,24 +8032,6 @@ Z_GROUP_EXPORT(iop)
         iop_dso_close(&dso2);
     } Z_TEST_END;
     /* }}} */
-    Z_TEST(nr_47521, "test bug while unpacking json with bunpack") { /* {{{ */
-        /* test that bunpack does not crash when trying to unpack json */
-        t_scope;
-        SB_1k(sb);
-        tstiop__my_struct_b__t b;
-        tstiop__my_class1__t c;
-        tstiop__my_class1__t *c_ptr;
-
-        iop_init(tstiop__my_struct_b, &b);
-        Z_ASSERT_N(iop_sb_jpack(&sb, &tstiop__my_struct_b__s, &b, 0));
-        Z_ASSERT_NEG(t_iop_bunpack(&LSTR_SB_V(&sb), tstiop__my_struct_b, &b));
-
-        iop_init(tstiop__my_class1, &c);
-        Z_ASSERT_N(iop_sb_jpack(&sb, &tstiop__my_class1__s, &c, 0));
-        Z_ASSERT_NEG(iop_bunpack_ptr(t_pool(), &tstiop__my_class1__s,
-                                     (void **)&c_ptr, ps_initsb(&sb), false));
-    } Z_TEST_END;
-    /* }}} */
     Z_TEST(iop_first_diff_desc, "test iop_first_diff_desc()") { /* {{{ */
         SB_1k(diff_desc);
         z_first_diff_st__t d1;
@@ -8108,6 +8104,15 @@ Z_GROUP_EXPORT(iop)
                                        &diff_desc));
         Z_ASSERT_STREQUAL(diff_desc.data, "field `o`: class type differs "
                           "(tstiop.FirstDiffC1 vs tstiop.FirstDiffC2)");
+
+        d2 = d1;
+        OPT_SET(d1.e, FIRST_DIFF_ENUM_A);
+        OPT_SET(d2.e, FIRST_DIFF_ENUM_C);
+
+        Z_ASSERT_N(iop_first_diff_desc(&z_first_diff_st__s, &d1, &d2,
+                                       &diff_desc));
+        Z_ASSERT_STREQUAL(diff_desc.data, "field `e`: "
+                          "value differs (`A(0)` vs `C(2)`)");
     } Z_TEST_END;
     /* }}} */
     Z_TEST(iop_nonreg_ioptag_union_unpack, "test iop_tag all bytes set (i32 vs u16)") { /* {{{ */

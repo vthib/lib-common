@@ -192,7 +192,6 @@ Other commands are listed with `waf --help`. Here they are:
                     command to produce a coverage report.
                     Note that this is done when configuring the project.
 * `coverage-end`: end a coverage session and produce a report.
-* `app-delivery`: prepare an APP delivery (archive of the source code).
 
 ==== Supported environment variables
 
@@ -203,9 +202,6 @@ The following environment variables can be used at the configuration phase:
     The complete list of available profiles is defined in
     `build/waftools/backend.py`, variable `PROFILES`.
     If not specified, the default profile is `default`.
-
-`NO_JAVA` (boolean)::
-    Set it to disable the Java support.
 
 `NOCHECK` (boolean)::
     The build-system doesn't run "check" targets, which are:
@@ -285,7 +281,7 @@ Thanks in advance for helping to make this project a success!
 
 == Copyright and License
 
-Copyright (C) 2005-2019 by Intersec SA and the individual contributors to lib-common.
+Copyright (C) 2005-2020 by Intersec SA and the individual contributors to lib-common.
 
 Licensed under the Apache License, Version 2.0 (the "License").  You may obtain
 a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.

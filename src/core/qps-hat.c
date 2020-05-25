@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -1087,6 +1087,10 @@ qps_handle_t qhat_create(qps_t *qps, uint32_t value_len, bool is_nullable)
 {
     qps_hptr_t cache;
     qhat_root_t *hat = qps_hptr_alloc(qps, sizeof(qhat_root_t), &cache);
+
+    if (value_len > 16) {
+        e_panic("unsupported qhat value length: %u", value_len);
+    }
 
     p_clear(hat, 1);
     memcpy(hat->sig, QPS_TRIE_SIG, countof(hat->sig));

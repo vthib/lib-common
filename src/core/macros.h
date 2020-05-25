@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -43,20 +43,6 @@
 #endif
 
 /* {{{ GNU extension wrappers */
-
-#if defined(__clang__)
-# define __CLANG_PREREQ(maj, min) \
-    ((__clang_major__ << 16) + __clang_minor__ >= ((maj) << 16) + (min))
-#elif !defined(__CLANG_PREREQ)
-# define __CLANG_PREREQ(maj, min)  0
-#endif
-
-#if !defined(__GNUC_PREREQ) && defined(__GNUC__) && defined(__GNUC_MINOR__)
-#  define __GNUC_PREREQ(maj, min) \
-       ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
-#elif !defined(__GNUC_PREREQ)
-#  define __GNUC_PREREQ(maj, min)   0
-#endif
 
 #if !defined(__doxygen_mode__)
 # if !__GNUC_PREREQ(3, 0) && !defined(__clang__)
@@ -165,6 +151,10 @@
 # define __cold __attribute__((cold))
 #else
 # define __cold
+#endif
+
+#if !(__GNUC_PREREQ(4, 5) || __has_builtin(builtin_unreachable))
+# define __builtin_unreachable() assert (false)
 #endif
 
 #if __GNUC_PREREQ(4, 6) || __has_attribute(leaf)
@@ -464,8 +454,23 @@ enum sign {
     })
 #define put_unaligned(ptr, v)  put_unaligned_type(typeof(v), ptr, v)
 
+#ifndef __BIGGEST_ALIGNMENT__
+# define __BIGGEST_ALIGNMENT__  16
+#endif
+
 /* }}} */
 /* {{{ Types */
+
+/* Useful atomics not defined in standard */
+typedef _Atomic(int8_t)   atomic_int8_t;
+typedef _Atomic(uint8_t)  atomic_uint8_t;
+typedef _Atomic(int16_t)  atomic_int16_t;
+typedef _Atomic(uint16_t) atomic_uint16_t;
+typedef _Atomic(int32_t)  atomic_int32_t;
+typedef _Atomic(uint32_t) atomic_uint32_t;
+typedef _Atomic(int64_t)  atomic_int64_t;
+typedef _Atomic(uint64_t) atomic_uint64_t;
+typedef _Atomic(ssize_t)  atomic_ssize_t;
 
 typedef uint64_t cpu64_t;
 typedef uint64_t __bitwise__ be64_t;

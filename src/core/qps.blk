@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -1692,7 +1692,7 @@ qps_gc_compact(qps_t *qps, uint32_t no, qps_map_t *map, qv_t(qps_gcmap) maps)
 static void qps_gc(qps_t *qps, uint32_t gc_gen)
 {
     uint64_t allocated = 0, disk_usage = 0;
-    uint_fast16_t enabled = QPS_GC_ENABLED;
+    uint16_t enabled = QPS_GC_ENABLED;
     qv_t(qps_gcmap) maps;
 
     assert (!qps->snapshotting);
@@ -2036,8 +2036,11 @@ static qps_pg_t qps_pg_remap_int(qps_t *qps, qps_pg_t blk, size_t nsz)
     if ((nxt->flags & QPS_BLK_FREE) && bsz + nxt->size >= nsz) {
         size_t tsz = bsz + qps_pg_blk_remove(qps, blk + bsz);
 
-        if (tsz > nsz)
+        if (tsz > nsz) {
             qps_pg_blk_insert(qps, blk + nsz, tsz - nsz);
+        } else {
+            hdr[nsz].flags &= ~QPS_BLK_PREV_FREE;
+        }
         PG_UNDEF(qps, blk + nsz, tsz - nsz);
     } else {
         qps_pg_t res = qps_pg_map_int(qps, hdr->handle, nsz);

@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -498,7 +498,7 @@ static void iopy_ic_server_on_event(ichannel_t *ic, ic_event_t evt)
             t_scope;
             lstr_t server_uri = t_lstr_dup(server->uri);
             lstr_t client_addr = t_lstr_dup(ic_get_client_addr(ic));
-            iopy_ic_server_t *server_dup = iopy_ic_server_dup(server);
+            iopy_ic_server_t *server_dup = iopy_ic_server_retain(server);
 
             iopy_el_mutex_unlock();
             iopy_ic_py_server_on_connect(server_dup, server_uri, client_addr);
@@ -512,7 +512,7 @@ static void iopy_ic_server_on_event(ichannel_t *ic, ic_event_t evt)
             t_scope;
             lstr_t server_uri = t_lstr_dup(server->uri);
             lstr_t client_addr = t_lstr_dup(ic_get_client_addr(ic));
-            iopy_ic_server_t *server_dup = iopy_ic_server_dup(server);
+            iopy_ic_server_t *server_dup = iopy_ic_server_retain(server);
 
             iopy_el_mutex_unlock();
             iopy_ic_py_server_on_disconnect(server_dup, server_uri,
@@ -566,7 +566,7 @@ static void iopy_ic_server_rpc_cb(ichannel_t *ic, uint64_t slot, void *arg,
         return;
     }
 
-    iopy_ic_server_dup(server);
+    iopy_ic_server_retain(server);
     iopy_el_mutex_unlock();
     status = t_iopy_ic_py_server_on_rpc(server, ic, slot, arg, hdr, &res,
                                         &res_st);
@@ -609,7 +609,7 @@ static int iopy_ic_server_listen_internal(iopy_ic_server_t *server,
     }
 
     qm_add(iopy_ic_server, &_G.servers, server->el_ic,
-           iopy_ic_server_dup(server));
+           iopy_ic_server_retain(server));
     lstr_copy(&server->uri, uri);
     return 0;
 }
@@ -1052,7 +1052,7 @@ iopy_ic_client_call(iopy_ic_client_t *client, const iop_rpc_t *rpc,
     msg->cb = rpc->async ? &ic_drop_ans_cb : &iopy_ic_client_query_cb;
 
     if (!rpc->async) {
-        iopy_ic_client_query_ctx_dup(query_ctx);
+        iopy_ic_client_query_ctx_retain(query_ctx);
     }
 
     __ic_bpack(msg, rpc->args, arg);
@@ -1220,9 +1220,10 @@ void iopy_rpc_module_stop(void)
 
     old_thr_status = _G.el_thr_status;
     _G.el_thr_status = EL_THR_STOPPED;
-    if (old_thr_status != EL_THR_NOT_STARTED
-    &&  expect(old_thr_status != EL_THR_STOPPED))
-    {
+
+    switch (old_thr_status) {
+      case EL_THR_STARTING:
+      case EL_THR_STARTED: {
         el_t el = el_signal_register(SIGINT, &el_loop_thread_on_term, NULL);
 
         iopy_el_mutex_unlock();
@@ -1230,8 +1231,12 @@ void iopy_rpc_module_stop(void)
         pthread_join(_G.el_thread, NULL);
 
         el_unregister(&el);
-    } else {
+      } break;
+
+      case EL_THR_NOT_STARTED:
+      case EL_THR_STOPPED:
         iopy_el_mutex_unlock();
+        break;
     }
 }
 

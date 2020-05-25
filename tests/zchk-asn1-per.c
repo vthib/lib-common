@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -306,7 +306,7 @@ Z_GROUP_EXPORT(asn1_aper) {
         } tests[3];
 
         tstiop__asn1_ext_choice__t out;
-        SB_1k(buf);
+        SB(buf, 42);
         pstream_t ps;
 
         tests[0].in = IOP_UNION(tstiop__asn1_ext_choice, i, 192);

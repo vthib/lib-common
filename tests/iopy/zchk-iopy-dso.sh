@@ -1,7 +1,7 @@
-#!/bin/bash -u
+#!/bin/bash -eu
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -17,39 +17,12 @@
 #                                                                         #
 ###########################################################################
 
-RES=0
-
-run_test() {
-    echo
-    echo "# $1"
-    eval "$1"
-    let "RES=$RES + $?"
-}
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 main() {
-    local tools_python_dir
-    local waf_list
+    export LSAN_OPTIONS="suppressions=$SCRIPT_DIR/python-leaks.supp"
 
-    tools_python_dir=$(dirname "$(readlink -f "$0")")
-    cd "$tools_python_dir" || exit -1
-    waf_list="$(waf list)"
-
-    if grep -qs "iopy/python2/iopy" <<<"$waf_list" ; then
-        run_test "python2 $tools_python_dir/z_iopy.py"
-    fi
-
-    if grep -qs "zchk-iopy-dso2" <<<"$waf_list" ; then
-        run_test "$tools_python_dir/zchk-iopy-dso2"
-    fi
-
-    if grep -qs "iopy/python3/iopy" <<<"$waf_list" ; then
-        run_test "python3 $tools_python_dir/z_iopy.py"
-    fi
-
-    if grep -qs "zchk-iopy-dso3" <<<"$waf_list" ; then
-        run_test "$tools_python_dir/zchk-iopy-dso3"
-    fi
+    "$SCRIPT_DIR/zchk-iopy-dso" "$@"
 }
 
-main
-exit $RES
+main "$@"

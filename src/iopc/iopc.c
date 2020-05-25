@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -220,7 +220,8 @@ static void sb_add_depends(iopc_pkg_t *pkg, sb_t *depbuf)
     t_qv_init(&t_weak_deps, 16);
     t_qv_init(&i_deps, 16);
 
-    iopc_get_depends(pkg, &t_deps, &t_weak_deps, &i_deps, true, true);
+    iopc_get_depends(pkg, &t_deps, &t_weak_deps, &i_deps,
+                     IOPC_GET_DEPENDS_INCLUDE_ALL);
 
     tab_for_each_entry(dep, &t_deps) {
         sb_addf(depbuf, "%s\n", dep->file);

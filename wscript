@@ -1,6 +1,6 @@
 ###########################################################################
 #                                                                         #
-# Copyright 2019 INTERSEC SA                                              #
+# Copyright 2020 INTERSEC SA                                              #
 #                                                                         #
 # Licensed under the Apache License, Version 2.0 (the "License");         #
 # you may not use this file except in compliance with the License.        #
@@ -21,7 +21,7 @@ import os
 import sys
 
 # pylint: disable = import-error
-from waflib import Context, Logs, Errors
+from waflib import Logs, Errors
 # pylint: enable = import-error
 
 waftoolsdir = os.path.join(os.getcwd(), 'build', 'waftools')
@@ -101,33 +101,13 @@ def configure(ctx):
         Logs.info('missing Linux UAPI SCTP header,'
                   ' it will be replaced by a custom one')
 
-    # {{{ Python 2
-
-    # TODO waf: use waf python tool for that?
-    ctx.find_program('python2')
-
-    # Check version is >= 2.6
-    py_ver = ctx.cmd_and_log(ctx.env.PYTHON2 + ['--version'],
-                             output=Context.STDERR)
-    py_ver = py_ver.strip()[len('Python '):]
-    py_ver_minor = int(py_ver.split('.')[1])
-    if py_ver_minor not in [6, 7]:
-        ctx.fatal('unsupported python version {0}'.format(py_ver))
-
-    # Get compilation flags
-    if py_ver_minor == 6:
-        ctx.find_program('python2.6-config', var='PYTHON2_CONFIG')
-    else:
-        ctx.find_program('python2.7-config', var='PYTHON2_CONFIG')
-
-    py_cflags = ctx.cmd_and_log(ctx.env.PYTHON2_CONFIG + ['--includes'])
-    ctx.env.append_unique('CFLAGS_python2', py_cflags.strip().split(' '))
-
-    py_ldflags = ctx.cmd_and_log(ctx.env.PYTHON2_CONFIG + ['--ldflags'])
-    ctx.env.append_unique('LDFLAGS_python2', py_ldflags.strip().split(' '))
-
-    # }}}
     # {{{ Python 3
+
+    ctx.find_program('python3')
+    ctx.find_program('python3-config', var='PYTHON3_CONFIG')
+
+    py_cflags = ctx.cmd_and_log(ctx.env.PYTHON3_CONFIG + ['--includes'])
+    ctx.env.append_unique('CFLAGS_python3', py_cflags.strip().split(' '))
 
     try:
         ctx.find_program(['python3-config', 'python3.6-config'],
@@ -217,6 +197,7 @@ def configure(ctx):
 
 def build(ctx):
     # Declare 4 build groups:
+    #  - one for generating the "version" source files
     #  - one for compiling farchc
     #  - one for compiling iopc
     #  - one for compiling pxc (used in the tools repository)
@@ -225,6 +206,7 @@ def build(ctx):
     # This way we are sure farchc is generated before iopc (needed because it
     # uses a farch file), and iopc is generated before building the IOP files.
     # Refer to section "Building the compiler first" of the waf book.
+    ctx.add_group('gen_version')
     ctx.add_group('farchc')
     ctx.add_group('iopc')
     ctx.add_group('pxcc')

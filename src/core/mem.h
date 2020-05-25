@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -301,10 +301,6 @@ static ALWAYS_INLINE mem_pool_t * nonnull t_pool(void);
 __attribute__((error("you cannot allocate that much memory")))
 #endif
 extern void __imalloc_too_large(void);
-
-#ifndef __BIGGEST_ALIGNMENT__
-# define __BIGGEST_ALIGNMENT__  16
-#endif
 
 #ifdef PAGE_SIZE
 # undef PAGE_SIZE

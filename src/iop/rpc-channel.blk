@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -2661,10 +2661,9 @@ static int ic_mark_connected(ichannel_t *ic, int fd)
 
 void ic_mark_disconnected(ichannel_t *ic)
 {
-    bool reconnect = (!ic->is_spawned && ic->auto_reconn);
-
+    ic->is_closing = true;
     ic_disconnect(ic);
-    if (reconnect) {
+    if (!ic->is_spawned && ic->auto_reconn) {
         assert (ic->timer == NULL);
         ic->timer = el_timer_register(ic->retry_delay, 0, 0, ic_reconnect,
                                       ic);

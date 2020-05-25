@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -16,47 +16,30 @@
 /*                                                                         */
 /***************************************************************************/
 
-#include "zchk_cmod.h"
+#include "priv.h"
 
-PXCC_EXPORT_FILE("zchk_cmod.h");
+logger_t prom_logger_g = LOGGER_INIT_INHERITS(NULL, "prometheus");
 
-/* {{{ Types & symbols syntax */
+dlist_t prom_collector_g;
 
-PXCC_EXPORT_TYPE(struct struct_t);
-PXCC_EXPORT_TYPE(struct_t);
-PXCC_EXPORT_TYPE(struct empty_struct_t);
-PXCC_EXPORT_TYPE(empty_struct_t);
 
-PXCC_EXPORT_TYPE(union union_t);
-PXCC_EXPORT_TYPE(union_t);
-PXCC_EXPORT_TYPE(union empty_union_t);
-PXCC_EXPORT_TYPE(empty_union_t);
+static int prometheus_client_initialize(void *arg)
+{
+    dlist_init(&prom_collector_g);
+    return 0;
+}
 
-PXCC_EXPORT_TYPE(enum enum_t);
-PXCC_EXPORT_TYPE(enum_t);
-PXCC_EXPORT_TYPE(enum empty_enum_t);
-PXCC_EXPORT_TYPE(empty_enum_t);
+static int prometheus_client_shutdown(void)
+{
+    prom_metric_t *metric;
 
-PXCC_EXPORT_TYPE(struct non_typedef_struct_t);
-PXCC_EXPORT_TYPE(only_typedef_struct_t);
-PXCC_EXPORT_TYPE(different_name_typedef_struct_t);
-PXCC_EXPORT_TYPE(void_ptr_t);
-PXCC_EXPORT_TYPE(array_ptr_t);
+    dlist_for_each_entry(metric, &prom_collector_g, siblings_list) {
+        obj_delete(&metric);
+    }
 
-PXCC_EXPORT_SYMBOL(func);
-PXCC_EXPORT_SYMBOL(global_var_g);
+    return 0;
+}
 
-PXCC_EXPORT_SYMBOL(crazy_fn);
-PXCC_EXPORT_TYPE(crazy_fn_ptr);
-PXCC_EXPORT_SYMBOL(returns_func_ptr);
-PXCC_EXPORT_SYMBOL(returns_func_ptr_nested);
-PXCC_EXPORT_TYPE(crazy_field_t);
-
-PXCC_EXPORT_TYPE(qh_u32_t);
-
-/* }}} */
-/* {{{ Python->C call */
-
-PXCC_EXPORT_SYMBOL(square);
-
-/* }}} */
+MODULE_BEGIN(prometheus_client)
+    MODULE_DEPENDS_ON(prometheus_client_http);
+MODULE_END()

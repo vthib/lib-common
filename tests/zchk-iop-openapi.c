@@ -1,6 +1,6 @@
 /***************************************************************************/
 /*                                                                         */
-/* Copyright 2019 INTERSEC SA                                              */
+/* Copyright 2020 INTERSEC SA                                              */
 /*                                                                         */
 /* Licensed under the Apache License, Version 2.0 (the "License");         */
 /* you may not use this file except in compliance with the License.        */
@@ -43,6 +43,7 @@ z_check_yaml(iop_openapi_t *openapi, const char *filename,
 {
     t_scope;
     yaml_data_t data;
+    yaml_pack_env_t *env;
     lstr_t file;
     SB_1k(sb);
     SB_1k(err);
@@ -52,7 +53,8 @@ z_check_yaml(iop_openapi_t *openapi, const char *filename,
         /* remove the 5th element */
         qv_splice(&data.obj->fields, 4, 1, NULL, 0);
     }
-    yaml_pack_sb(&data, NULL, &sb);
+    env = t_yaml_pack_env_new();
+    Z_ASSERT_N(t_yaml_pack_sb(env, &data, &sb, NULL));
 
     Z_HELPER_RUN(t_z_load_openapi_file(filename, &file));
     Z_ASSERT_LSTREQUAL(LSTR_SB_V(&sb), file);
